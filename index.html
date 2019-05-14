@@ -1,1 +1,118 @@
-Hello World
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Short analysis of the Stackoverflow Survey 2017.md</title><style></style></head><body id="preview">
+<h1><a id="Short_analysis_of_the_Stackoverflow_Survey_2017_0"></a>Short analysis of the Stackoverflow Survey 2017</h1>
+<blockquote>
+<p>TL;DR: Have a look at the last table at the bottom to get the answers for the following three questions:</p>
+<ul>
+<li>Exists a correlation between <em>Overpaid</em> and the programming experience?</li>
+<li>Is there a programing language specific correlation between “OtherPeoplesCode - Maintaining other people’s code is a form of torture” and “EnjoyDebugging -I enjoy debugging code”?</li>
+<li>How many people, who program in Python, follow the PEP8 guidelines and use spaces instead of tabs?</li>
+</ul>
+</blockquote>
+<p>Stackoverflow performs an anual survey. As it is used by many developers, it is “the largest and most comprehensive survey of people who code around the world” <a href="https://insights.stackoverflow.com/survey/">Ref</a>.<br>
+The survey covers a wide range of topics. From the technologies used to production blockers to working conditions, everything is covered.</p>
+<p><strong>Questions which will be answered in the following parts:</strong></p>
+<p>To get an idea of this huge data set, I had a look into the schema file which is provided additionally to the data. It contains a description for the different answers. In the following text, I would like to answer the following questions which came to me while looking at the data. These questions refer to the people behind the accounts, not to Stackoverflow relevant evaluation. Here are my questions:</p>
+<table class="table table-striped table-bordered">
+<thead>
+<tr>
+<th>#</th>
+<th style="text-align:left">Question</th>
+<th style="text-align:left">Helpful columns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td style="text-align:left">Exists a correlation between <em>Overpaid</em> and the programming experience?</td>
+<td style="text-align:left">YearsProgram, Overpaid</td>
+</tr>
+<tr>
+<td>2</td>
+<td style="text-align:left">Is there a programing language specific correlation between “OtherPeoplesCode - Maintaining other people’s code is a form of torture” and “EnjoyDebugging -I enjoy debugging code”?</td>
+<td style="text-align:left">HaveWorkedLanguage, OtherPeoplesCode, EnjoyDebugging</td>
+</tr>
+<tr>
+<td>3</td>
+<td style="text-align:left">How many people, who program in Python, follow the PEP8 guidelines and use spaces instead of tabs?</td>
+<td style="text-align:left">HaveWorkedLanguage, TabsSpaces</td>
+</tr>
+</tbody>
+</table>
+<p>The survey contained 154 questions. In total, there are 19102 survey responses. As the data is so broad, in the following part, only the used data columns are mentioned and explained if needed.</p>
+<h2><a id="Question_1_Exists_a_correlation_between_Overpaid_and_the_programming_experience_23"></a>Question 1: Exists a correlation between <em>Overpaid</em> and the programming experience?</h2>
+<h3><a id="Preprocessing_24"></a>Preprocessing</h3>
+<p>To determine a correlation, you need values in the corresponding columns. Therefore, in the first step, all data records were removed where the entry in <em>Overpaid</em> was missing. By this step, the number of responses reduced from <em>19102</em> to <em>5184</em>.</p>
+<p><em>YearsProgram</em> is a categorical value, which define a time spans of one year each. These values are converted into a nested dictionary which match the years of experience with the Overpaid rate as it can be seen below.</p>
+<pre><code class="language-Python"><span class="hljs-comment">## YEARS PROGRAM</span>
+<span class="hljs-comment"># Create a nested dictionary which matches the years of experience with the overpaid rate</span>
+q1_dict_experience = defaultdict(dict)
+
+<span class="hljs-keyword">for</span> key, data <span class="hljs-keyword">in</span> df_q1.groupby(by=[<span class="hljs-string">'YearsProgram'</span>, <span class="hljs-string">'Overpaid'</span>]):
+   experience = key[<span class="hljs-number">0</span>]
+   overpaid_target = key[<span class="hljs-number">1</span>]
+   value = data.YearsProgram.count()
+   q1_dict_experience[experience][overpaid_target] = value
+</code></pre>
+<h3><a id="Analysis_40"></a>Analysis</h3>
+<p>To get comparable values for each time span, the values are calculated as percentage.<br>
+As it can be seen in the following figure, no correlation exists between the feeling of beeing Over- or Underpaid with the years of experience. Of course there are some fluctuations, but there are no significant differences that indicate a trend over the years of programming experience.<br>
+<img src="images/YearsProgram_vs_Overpaid.png" alt="Correlation of Overpaid and Years of experience"></p>
+<h2><a id="Question_2_Is_there_a_programing_language_specific_correlation_between_OtherPeoplesCode__Maintaining_other_peoples_code_is_a_form_of_torture_and_EnjoyDebugging_I_enjoy_debugging_code_47"></a>Question 2: Is there a programing language specific correlation between <em>OtherPeoplesCode - Maintaining other people’s code is a form of torture</em> and <em>EnjoyDebugging -I enjoy debugging code</em>?</h2>
+<h3><a id="Preprocessing_48"></a>Preprocessing</h3>
+<p>In the stackoverflow data set exists a column <em>HaveWorkedLanguage</em> which contains a list of the different programming languages a respondent has been working with already. This list has been split into binary columns for each programming language. This preprocessing step can be found <a href="https://github.com/einalem1234/nd-proj-DataScienceBlog/blob/master/notebooks/Stackoverflow_Survey_2017.ipynb#Clean">here</a></p>
+<p>Both of the other columns <em>OtherPeopleCode</em> and <em>EnjoyDebugging</em> are categorial and preprocessed by one-hot-encoding, as shown below.</p>
+<pre><code class="language-Python"><span class="hljs-comment"># ENJOY DEBUGGING</span>
+tmp = pd.get_dummies(df_q2.EnjoyDebugging, prefix=<span class="hljs-string">'EnjoyDebugging'</span>, prefix_sep=<span class="hljs-string">'_'</span>)
+df_q2[tmp.columns] = tmp
+df_q2 = df_q2.drop(labels=[<span class="hljs-string">'EnjoyDebugging'</span>], axis = <span class="hljs-number">1</span>)
+</code></pre>
+<h3><a id="Modelling_59"></a>Modelling</h3>
+<p>My assumption is that someone who likes to debug and fix code, might also be interessted in understanding other peoples code as he does it often when searching for solutions. To test my assumption, I generated a correlation matrix between the two columns.</p>
+<p><img src="images/OtherPeopleCode_vs_EnjoyDebugging.png" alt="Correlation of OtherPeopleCode and EnjoyDebugging"></p>
+<p>The interesting parts of the figure are the upper right and lower left quadrant. The other two quadrants show the correlation between all possible values for the columns with them self.<br>
+As it can be seen there is no strong correlation between the two features.</p>
+<p>Some programming languages are harder to read and understand than others, so I recomputed the correlation matrix for each available programming language.</p>
+<p><img src="images/OtherPeopleCode_vs_EnjoyDebugging_ProgLanguages.png" alt="Correlation of OtherPeopleCode and EnjoyDebugging for each programming language"><br>
+For some programming languages, there are some small identications agreeing or disagreeing with my assumption but not as clear as I thought it would be. To get an idea significant the values are, I added the number of responses which were available for each language.</p>
+<h2><a id="Question_3_How_many_people_who_program_in_Python_follow_the_PEP8_guidelines_and_use_spaces_instead_of_tabs_73"></a>Question 3: How many people, who program in Python, follow the PEP8 guidelines and use spaces instead of tabs?</h2>
+<h3><a id="Preprocessing_74"></a>Preprocessing</h3>
+<p>As I write most of the time in Python, I was curious how many of the users use Spaces for indentation as it is proposed in the PEP8 guidelines.</p>
+<p>For this analysis, only two columns are needed: <em>Python</em> and <em>TabsSpaces</em>. The column <em>Python</em> has been generated as described in the preprocessing of Question 2. The corresponding code can be found <a href="https://github.com/einalem1234/nd-proj-DataScienceBlog/blob/master/notebooks/Stackoverflow_Survey_2017.ipynb#Clean">here</a>. The column <em>TabsSpaces</em> has been converted into three binary columns, one for Tabs, one for Spaces and one for users who use both.</p>
+<h3><a id="Analysis_78"></a>Analysis</h3>
+<p>For the analysis, some calculations have been made. Here are the results:</p>
+<ul>
+<li>2119 Stackoverflow users who programm in Python use Spaces, as it is suggested by the PEP8 guidelines. This are 50.46% of all python users in this survey.</li>
+<li>1457 of the survey participants which programm in Python have not heard about PEP8 yet and use tabs for indentation. This are 34.70%. Hopefully this number will decrease.</li>
+<li>Only 14.57% of the Python programmers write a mixture of tabs and spaces. If they are only programming Python, this means that they use Python 2, because Python 3 does not allow a mixing of tabs and spaces anymore. Or they use different programming languages and this leds to this unambigous answer.</li>
+</ul>
+<h2><a id="Which_questions_have_been_answered_with_this_analysis_84"></a>Which questions have been answered with this analysis?</h2>
+<p>Three questions about the stackoverflow survey of 2017 have been answered in this text. In the following table, there you can find the summary of the results.</p>
+<table class="table table-striped table-bordered">
+<thead>
+<tr>
+<th>#</th>
+<th style="text-align:left">Question</th>
+<th style="text-align:left">Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td style="text-align:left">Exists a correlation between <em>Overpaid</em> and the programming experience?</td>
+<td style="text-align:left">No, the impression of the respondent if they are over- or underpaid is not strongly influenced by their programming experience.</td>
+</tr>
+<tr>
+<td>2</td>
+<td style="text-align:left">Is there a programing language specific correlation between “OtherPeoplesCode - Maintaining other people’s code is a form of torture” and “EnjoyDebugging -I enjoy debugging code”?</td>
+<td style="text-align:left">No clear correlation could be found between <em>OtherPeoplesCode</em> and <em>EnjoyDebugging</em>. There are language specific changes, but nothing extraordinary.</td>
+</tr>
+<tr>
+<td>3</td>
+<td style="text-align:left">How many people, who program in Python, follow the PEP8 guidelines and use spaces instead of tabs?</td>
+<td style="text-align:left">50.46 % of all python users in this survey use spaces as it is suggested by the PEP8 pipelines.</td>
+</tr>
+</tbody>
+</table>
+<p>The code of this analysis can be found <a href="https://github.com/einalem1234/nd-proj-DataScienceBlog/blob/master/notebooks/Stackoverflow_Survey_2017.ipynb">here</a>.</p>
+
+</body></html>
